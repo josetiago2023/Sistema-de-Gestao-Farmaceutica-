@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>PharmaManager</title>
+
+<!-- SEÇÃO DE ESTILOS (CSS) -->
+<style>
+/* Estilo geral da página */
+body {
+    font-family: Arial; /* Define a fonte */
+    margin: 20px; /* Adiciona uma margem ao redor de toda a página */
+}
+
+/* Estilo das seções (caixas que dividem o conteúdo) */
+section {
+    border: 1px solid #ccc; /* Borda cinza clara */
+    padding: 15px; /* Espaço interno */
+    margin-bottom: 20px; /* Espaço inferior entre as seções */
+}
+
+/* Estilo para campos de texto, seleções e botões */
+input, select, button {
+    margin: 5px; /* Espaçamento externo */
+    padding: 5px; /* Espaçamento interno para não ficar espremido */
+}
+
+/* Estilo para tabelas (embora não existam tags <table> ativas no HTML abaixo, o estilo está preparado) */
+table {
+    width: 100%;
+    border-collapse: collapse; /* Remove o espaço entre as bordas da tabela */
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 5px;
+}
+</style>
+</head>
+<body>
+
+<h1>💊 PharmaManager</h1>
+
+<!-- 1. SEÇÃO DE CADASTRO DE PRODUTOS -->
+<section>
+    <h2>Cadastro de Produto</h2>
+    
+    <!-- Campos de entrada de dados para o produto -->
+    <input id="nome" placeholder="Nome">
+    <input id="fabricante" placeholder="Fabricante">
+    
+    <!-- Menu suspenso para escolher a categoria -->
+    <select id="categoria">
+        <option>Medicamento</option>
+        <option>Higiene</option>
+        <option>Cosmético</option>
+    </select>
+    
+    <!-- Campos numéricos para preço e estoque -->
+    <input id="preco" type="number" placeholder="Preço">
+    <input id="estoque" type="number" placeholder="Quantidade">
+    
+    <!-- Botão que aciona a função JavaScript para salvar o produto -->
+    <button onclick="cadastrarProduto()">Cadastrar Produto</button>
+</section>
+
+<!-- 2. SEÇÃO DE LISTAGEM DE PRODUTOS -->
+<section>
+    <h2>Produtos</h2>
+    <!-- Div vazia que será preenchida dinamicamente pelo JavaScript com a lista de produtos -->
+    <div id="listaProdutos"></div>
+</section>
+
+<!-- 3. SEÇÃO DE CADASTRO DE CLIENTES -->
+<section>
+    <h2>Cadastro de Cliente</h2>
+    
+    <input id="clienteNome" placeholder="Nome do Cliente">
+    
+    <!-- Botão que aciona a função para salvar o cliente -->
+    <button onclick="cadastrarCliente()">Cadastrar Cliente</button>
+    
+    <!-- Div vazia que será preenchida com a lista de clientes -->
+    <div id="listaClientes"></div>
+</section>
+
+<!-- 4. SEÇÃO DE VENDAS -->
+<section>
+    <h2>Venda</h2>
+    
+    <!-- Select vazio que será preenchido pelo JS com os produtos disponíveis -->
+    <select id="produtoVenda"></select>
+    
+    <!-- Campo para definir quantas unidades serão vendidas -->
+    <input id="quantidadeVenda" type="number" placeholder="Quantidade">
+    
+    <!-- Botão que aciona a função de venda -->
+    <button onclick="vender()">Realizar Venda</button>
+    
+    <!-- Local onde o total de vendas realizadas será exibido -->
+    <h3 id="totalVendas">Total vendido: R$ 0</h3>
+</section>
+
+<!-- SEÇÃO DE COMPORTAMENTO (JAVASCRIPT) -->
+<script>
+
+
+// 1. INICIALIZAÇÃO DE DADOS (LOCALSTORAGE)
+
+// Tenta buscar os dados no armazenamento do navegador (localStorage). 
+// Se não existir nada, cria um array vazio ([]). O JSON.parse transforma o texto salvo em objeto/array.
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
+let vendas = JSON.parse(localStorage.getItem("vendas")) || [];
+
+
+// 2. FUNÇÃO PARA SALVAR DADOS
+
+function salvar(){
+    // Transforma os arrays em formato de texto (JSON.stringify) e salva no navegador
+    localStorage.setItem("produtos", JSON.stringify(produtos));
+    localStorage.setItem("clientes", JSON.stringify(clientes));
+    localStorage.setItem("vendas", JSON.stringify(vendas));
+}
+
+
+// 3. FUNÇÃO DE CADASTRAR PRODUTO
+
+function cadastrarProduto(){
+    // Cria um objeto 'produto' pegando os valores digitados nos inputs do HTML
+    let produto = {
+        id: Date.now(), // Gera um ID único baseado na data/hora atual
+        nome: document.getElementById("nome").value,
+        fabricante: document.getElementById("fabricante").value,
+        categoria: document.getElementById("categoria").value,
+        preco: Number(document.getElementById("preco").value), // Converte para número
+        estoque: Number(document.getElementById("estoque").value) // Converte para número
+    };
+
+    // Adiciona o novo produto ao array de produtos
+    produtos.push(produto);
+
+    // Salva no localStorage e atualiza a tela para mostrar o novo produto
+    salvar();
+    atualizarTela();
+
+    alert("Produto cadastrado!"); // Exibe um aviso na tela
+}
+
+
+// 4. FUNÇÃO DE CADASTRAR CLIENTE
+
+function cadastrarCliente(){
+    // Cria um objeto 'cliente'
+    let cliente = {
+        id: Date.now(),
+        nome: document.getElementById("clienteNome").value,
+        pontos: 0 // Inicia com 0 pontos de fidelidade (pode ser usado no futuro)
+    };
+
+    // Adiciona ao array, salva e atualiza a interface
+    clientes.push(cliente);
+    salvar();
+    atualizarTela();
+
+    alert("Cliente cadastrado!");
+}
+
+
+// 5. FUNÇÃO DE REALIZAR VENDA
+
+function vender(){
+    // Pega o índice (posição no array) do produto escolhido no menu suspenso
+    let indice = document.getElementById("produtoVenda").value;
+    
+    // Pega a quantidade que o usuário quer comprar
+    let quantidade = Number(document.getElementById("quantidadeVenda").value);
+    
+    // Identifica qual é o produto com base no índice
+    let produto = produtos[indice];
+
+    // Validação: Verifica se há estoque suficiente
+    if(quantidade > produto.estoque){
+        alert("Estoque insuficiente!");
+        return; // Para a função aqui, cancelando a venda
+    }
+
+    // Subtrai a quantidade vendida do estoque do produto
+    produto.estoque -= quantidade;
+
+    // Calcula o valor total da venda
+    let total = produto.preco * quantidade;
+
+    // Registra a venda no array de vendas
+    vendas.push({
+        produto: produto.nome,
+        quantidade: quantidade,
+        total: total
+    });
+
+    // Salva a alteração de estoque e a nova venda, e atualiza a tela
+    salvar();
+    atualizarTela();
+
+    // Mostra mensagem de sucesso com o valor total formatado com 2 casas decimais
+    alert("Venda realizada! Total R$ " + total.toFixed(2));
+}
+
+
+// 6. FUNÇÃO PARA ATUALIZAR A INTERFACE (TELA)
+
+function atualizarTela(){
+    // --- ATUALIZA A LISTA DE PRODUTOS ---
+    let listaProdutos = document.getElementById("listaProdutos");
+    listaProdutos.innerHTML = ""; // Limpa a lista atual para não duplicar
+
+    // Percorre cada produto no array
+    produtos.forEach((p, index) => {
+        // Se o estoque for menor que 10, cria um alerta visual
+        let alerta = p.estoque < 10 ? " ⚠ ESTOQUE BAIXO" : "";
+
+        // Adiciona o produto formatado dentro da div HTML
+        listaProdutos.innerHTML += `
+        <p>
+        ${p.nome} | ${p.categoria} | R$ ${p.preco} | Estoque: ${p.estoque} ${alerta}
+        </p>
+        `;
+    });
+
+    // --- ATUALIZA A LISTA DE CLIENTES ---
+    let listaClientes = document.getElementById("listaClientes");
+    listaClientes.innerHTML = ""; // Limpa a lista
+
+    // Percorre os clientes e adiciona na tela
+    clientes.forEach(c => {
+        listaClientes.innerHTML += `<p>${c.nome} | Pontos: ${c.pontos}</p>`;
+    });
+
+    // --- ATUALIZA O MENU SUSPENSO DE VENDAS ---
+    let select = document.getElementById("produtoVenda");
+    select.innerHTML = ""; // Limpa o menu
+
+    // Adiciona cada produto como uma opção de compra no select
+    produtos.forEach((p, index) => {
+        select.innerHTML += `
+        <option value="${index}">
+        ${p.nome} (Estoque: ${p.estoque})
+        </option>
+        `;
+    });
+
+    // --- CALCULA O TOTAL DE VENDAS GERAIS ---
+    let total = 0;
+    
+    // Soma o total de cada venda registrada no histórico
+    vendas.forEach(v => {
+        total += v.total;
+    });
+
+    // Atualiza o texto do H3 com o total de dinheiro que entrou
+    document.getElementById("totalVendas").innerText = "Total vendido: R$ " + total.toFixed(2);
+}
+
+// Executa a função de atualizar tela assim que a página é carregada
+// Isso garante que os dados salvos anteriormente no localStorage apareçam imediatamente
+atualizarTela();
+
+</script>
+
+</body>
+</html>
